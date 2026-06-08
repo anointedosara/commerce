@@ -1,11 +1,5 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error("Missing MONGODB_URI environment variable. See .env.local.example");
-}
-
 /**
  * In development, Next.js hot-reloads modules on every change, which would
  * otherwise create a new database connection on each reload and exhaust the
@@ -26,8 +20,15 @@ global._mongoose = cached;
 export async function connectDB(): Promise<typeof mongoose> {
   if (cached.conn) return cached.conn;
 
+  // Read the URI lazily so importing this module never throws during `next
+  // build` — the error only surfaces at runtime when a DB call is actually made.
+  const MONGODB_URI = process.env.MONGODB_URI;
+  if (!MONGODB_URI) {
+    throw new Error("Missing MONGODB_URI environment variable. See .env.local.example");
+  }
+
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI!, {
+    cached.promise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
     });
   }

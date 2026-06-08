@@ -3,11 +3,19 @@ import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 
-const AUTH_SECRET = process.env.AUTH_SECRET;
-if (!AUTH_SECRET) {
-  throw new Error("Missing AUTH_SECRET environment variable. See .env.local.example");
+/**
+ * Resolve the signing secret lazily. Reading it at module-eval time would make
+ * `next build` fail just collecting page data (e.g. /_not-found) when the env
+ * var isn't present in the build environment. Deferring to call time means the
+ * error only surfaces at runtime, if the secret is genuinely missing.
+ */
+function getSecret(): Uint8Array {
+  const value = process.env.AUTH_SECRET;
+  if (!value) {
+    throw new Error("Missing AUTH_SECRET environment variable. See .env.local.example");
+  }
+  return new TextEncoder().encode(value);
 }
-const secret = new TextEncoder().encode(AUTH_SECRET);
 
 export const COOKIE_NAME = "token";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -33,12 +41,12 @@ export async function signToken(payload: SessionPayload): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE}s`)
-    .sign(secret);
+    .sign(getSecret());
 }
 
 export async function verifyToken(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload as unknown as SessionPayload;
   } catch {
     return null;
