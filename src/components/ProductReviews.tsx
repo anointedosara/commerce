@@ -14,6 +14,7 @@ import {
 interface Viewer {
   userId: string;
   name: string;
+  role: string;
 }
 
 function timeAgo(iso: string): string {
@@ -95,6 +96,27 @@ export function ProductReviews({
   const [busy, setBusy] = useState<Record<string, boolean>>({});
 
   const hasReviewed = reviews.some((r) => r.isMine);
+  const isAdmin = viewer?.role === "admin";
+
+  async function deleteReview(reviewId: string) {
+    if (!window.confirm("Delete this review? This can't be undone.")) return;
+    const res = await fetch(`/api/reviews/${reviewId}`, { method: "DELETE" });
+    if (res.ok) setReviews((rs) => rs.filter((r) => r._id !== reviewId));
+  }
+
+  async function deleteComment(reviewId: string, commentId: string) {
+    if (!window.confirm("Delete this comment?")) return;
+    const res = await fetch(`/api/comments/${commentId}`, { method: "DELETE" });
+    if (res.ok) {
+      setReviews((rs) =>
+        rs.map((r) =>
+          r._id !== reviewId
+            ? r
+            : { ...r, comments: r.comments.filter((c) => c._id !== commentId) },
+        ),
+      );
+    }
+  }
 
   async function submitReview(e: React.FormEvent) {
     e.preventDefault();
@@ -253,6 +275,15 @@ export function ProductReviews({
                     )}
                     <span className="text-amber-500">{"★".repeat(r.rating)}<span className="text-border">{"★".repeat(5 - r.rating)}</span></span>
                     <span className="text-xs text-muted">· {timeAgo(r.createdAt)}</span>
+                    {(r.isMine || isAdmin) && (
+                      <button
+                        type="button"
+                        onClick={() => deleteReview(r._id)}
+                        className="ml-auto text-xs font-medium text-muted transition-colors hover:text-red-500"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                   {r.body && <p className="mt-1.5 text-sm text-muted">{r.body}</p>}
 
@@ -279,6 +310,15 @@ export function ProductReviews({
                                   </span>
                                 )}
                                 <span className="text-xs text-muted">· {timeAgo(c.createdAt)}</span>
+                                {(c.isMine || isAdmin) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteComment(r._id, c._id)}
+                                    className="ml-auto text-xs font-medium text-muted transition-colors hover:text-red-500"
+                                  >
+                                    Delete
+                                  </button>
+                                )}
                               </div>
                               <p className="mt-0.5 text-sm text-muted">{c.body}</p>
                               <ReactionBar

@@ -46,6 +46,9 @@ export function NavMenu({ session }: { session: NavSession | null }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+
   // Close the dropdown whenever the route changes.
   useEffect(() => {
     setOpen(false);
@@ -67,17 +70,39 @@ export function NavMenu({ session }: { session: NavSession | null }) {
         {/* Desktop links */}
         <div className="hidden items-center gap-6 text-sm text-muted sm:flex">
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="transition-colors hover:text-foreground">
+            <Link
+              key={l.href}
+              href={l.href}
+              aria-current={isActive(l.href) ? "page" : undefined}
+              className={cn(
+                "relative transition-colors hover:text-foreground after:absolute after:-bottom-1.5 after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-brand-600 after:transition-transform hover:after:scale-x-100",
+                isActive(l.href) && "font-medium text-foreground after:scale-x-100",
+              )}
+            >
               {l.label}
             </Link>
           ))}
           {session && (
-            <Link href="/dashboard" className="transition-colors hover:text-foreground">
+            <Link
+              href="/dashboard"
+              aria-current={isActive("/dashboard") ? "page" : undefined}
+              className={cn(
+                "transition-colors hover:text-foreground",
+                isActive("/dashboard") && "font-medium text-foreground",
+              )}
+            >
               Dashboard
             </Link>
           )}
           {session?.role === "admin" && (
-            <Link href="/admin" className="font-medium text-brand-600 transition-colors hover:text-brand-700">
+            <Link
+              href="/admin"
+              aria-current={isActive("/admin") ? "page" : undefined}
+              className={cn(
+                "text-brand-600 transition-colors hover:text-brand-700",
+                isActive("/admin") ? "font-semibold text-brand-700" : "font-medium",
+              )}
+            >
               Admin
             </Link>
           )}
@@ -151,9 +176,11 @@ export function NavMenu({ session }: { session: NavSession | null }) {
               key={l.href}
               href={l.href}
               onClick={() => setOpen(false)}
+              aria-current={isActive(l.href) ? "page" : undefined}
               style={{ transitionDelay: open ? `${60 + i * 40}ms` : "0ms" }}
               className={cn(
                 "rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-all duration-300 hover:bg-brand-50 dark:hover:bg-white/5",
+                isActive(l.href) && "bg-brand-50 text-brand-700 dark:bg-white/10 dark:text-brand-100",
                 open ? "translate-x-0 opacity-100" : "-translate-x-2 opacity-0",
               )}
             >
@@ -164,9 +191,11 @@ export function NavMenu({ session }: { session: NavSession | null }) {
             <Link
               href="/dashboard"
               onClick={() => setOpen(false)}
+              aria-current={isActive("/dashboard") ? "page" : undefined}
               style={{ transitionDelay: open ? `${60 + LINKS.length * 40}ms` : "0ms" }}
               className={cn(
                 "rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-all duration-300 hover:bg-brand-50 dark:hover:bg-white/5",
+                isActive("/dashboard") && "bg-brand-50 text-brand-700 dark:bg-white/10 dark:text-brand-100",
                 open ? "translate-x-0 opacity-100" : "-translate-x-2 opacity-0",
               )}
             >

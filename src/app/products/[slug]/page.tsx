@@ -30,7 +30,9 @@ export default async function ProductPage({
     .limit(50)
     .lean();
   const reviews = reviewDocs.map((r) => shapeReview(r, session?.userId));
-  const viewer = session ? { userId: session.userId, name: session.name } : null;
+  const viewer = session
+    ? { userId: session.userId, name: session.name, role: session.role }
+    : null;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
