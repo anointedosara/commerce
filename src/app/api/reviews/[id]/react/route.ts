@@ -25,9 +25,13 @@ export async function POST(
 
   const uid = session.userId;
   const arr = review.reactions as unknown as Array<{ userId: Types.ObjectId; emoji: string }>;
-  const idx = arr.findIndex((r) => String(r.userId) === uid && r.emoji === emoji);
-  if (idx >= 0) arr.splice(idx, 1);
-  else arr.push({ userId: new Types.ObjectId(uid), emoji });
+  // One reaction per user: remove any existing reaction by this user first.
+  const hadSame = arr.some((r) => String(r.userId) === uid && r.emoji === emoji);
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (String(arr[i].userId) === uid) arr.splice(i, 1);
+  }
+  // Re-clicking the current emoji toggles it off; a different one replaces it.
+  if (!hadSame) arr.push({ userId: new Types.ObjectId(uid), emoji });
   review.markModified("reactions");
   await review.save();
 
